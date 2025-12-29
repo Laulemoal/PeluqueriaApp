@@ -9,7 +9,17 @@ async function loadServices() {
 
     data.forEach(s => {
         const li = document.createElement("li");
-        li.textContent = `${s.name} - $${s.price}`;
+
+        const text = document.createElement("span");
+        text.textContent = `${s.name} - $${s.price}`;
+
+        const btn = document.createElement("button");
+        btn.textContent = "Eliminar";
+        btn.style.marginLeft = "10px";
+        btn.onclick = () => deleteService(s.id);
+
+        li.appendChild(text);
+        li.appendChild(btn);
         ul.appendChild(li);
     });
 }
@@ -26,5 +36,17 @@ async function addService() {
 
     loadServices();
 }
+
+async function deleteService(id) {
+    const ok = confirm("¿Eliminar este servicio?");
+    if (!ok) return;
+
+    await fetch(`${API}/services/${id}`, {
+        method: "DELETE"
+    });
+
+    loadServices();
+}
+
 
 loadServices();
