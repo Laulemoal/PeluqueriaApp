@@ -118,4 +118,17 @@ li button {
     background: #c62828;
     padding: 6px 10px;
     font-size: 12px;
+
+
+}
+
+button.danger {
+    background: #c62828;
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 10px;
+}
+
+button.danger:hover {
+    opacity: 0.9;
 }
