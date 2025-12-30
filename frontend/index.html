@@ -18,8 +18,31 @@
         <button onclick="addService()">Agregar</button>
         <ul id="services"></ul>
     </section>
+    <h2>Clientes</h2>
+
+    <input id="clientName" placeholder="Nombre del cliente">
+    <input id="clientPhone" placeholder="Teléfono">
+    <button onclick="addClient()">Agregar cliente</button>
+
+    <ul id="clients"></ul>
+    </section>
 
     <script src="app.js"></script>
+
+    <section>
+        <h2>Turnos</h2>
+
+        <select id="appointmentClient"></select>
+        <select id="appointmentService"></select>
+
+        <input type="date" id="appointmentDate">
+        <input type="time" id="appointmentTime">
+
+        <button onclick="addAppointment()">Agregar turno</button>
+
+        <ul id="appointments"></ul>
+    </section>
+
 </body>
 
 </html>
