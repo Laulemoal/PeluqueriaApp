@@ -1,14 +1,16 @@
+const API = "http://localhost:3000";
+
 function onlyNumbers(input) {
     input.value = input.value.replace(/\D/g, "");
 }
 
-const API = "http://localhost:3000";
 
 async function loadServices() {
-    const res = await fetch(`${API}/services`);
+    const res = await fetch(`${API}/services`); 
     const data = await res.json();
-    const servicesRes = await fetch(`${API}/services/catalog`);
+
     const ul = document.getElementById("services");
+    if (!ul) return;
     ul.innerHTML = "";
 
     data.forEach(s => {
@@ -20,6 +22,7 @@ async function loadServices() {
         const btn = document.createElement("button");
         btn.textContent = "Eliminar";
         btn.style.marginLeft = "10px";
+        btn.className = "danger";
         btn.onclick = () => deleteService(s.id);
 
         li.appendChild(text);
@@ -28,11 +31,10 @@ async function loadServices() {
     });
 }
 
-// ================= SERVICIOS =================
-
 async function addService() {
     const nameEl = document.getElementById("serviceName");
     const priceEl = document.getElementById("servicePrice");
+
     const name = nameEl.value.trim();
     const price = priceEl.value.trim();
 
@@ -50,32 +52,29 @@ async function addService() {
     nameEl.value = "";
     priceEl.value = "";
 
+    await loadServices();         
+    await loadServicesCatalog();  
 }
-
 
 async function deleteService(id) {
     const ok = confirm("¿Eliminar este servicio?");
     if (!ok) return;
 
-    await fetch(`${API}/services/${id}`, {
-        method: "DELETE"
-    });
+    const res = await fetch(`${API}/services/${id}`, { method: "DELETE" });
+    if (!res.ok) return alert("No se pudo eliminar");
 
-
+    await loadServices();
+    await loadServicesCatalog();
 }
-
-
-
 
 // ================= CLIENTES =================
 
 async function loadClients() {
     const res = await fetch(`${API}/clients`);
     const data = await res.json();
-    console.log("loadClients render ->", data);
-
 
     const ul = document.getElementById("clients");
+    if (!ul) return;
     ul.innerHTML = "";
 
     data.forEach(c => {
@@ -96,21 +95,6 @@ async function loadClients() {
     });
 }
 
-
-async function deleteClient(id) {
-    const ok = confirm("¿Eliminar este cliente?");
-    if (!ok) return;
-
-    const res = await fetch(`${API}/clients/${id}`, { method: "DELETE" });
-
-    if (!res.ok) {
-        console.error("DELETE /clients falló:", res.status);
-        return alert(`No se pudo eliminar (HTTP ${res.status})`);
-    }
-
-}
-
-
 async function addClient() {
     const nameEl = document.getElementById("clientName");
     const phoneEl = document.getElementById("clientPhone");
@@ -119,45 +103,58 @@ async function addClient() {
     const phone = phoneEl.value.trim();
 
     if (!name) return alert("Nombre requerido");
+    if (phone && !/^\d+$/.test(phone)) return alert("El teléfono solo puede contener números");
 
-    if (phone && !/^\d+$/.test(phone)) {
-        return alert("El teléfono solo puede contener números");
-    }
+    const res = await fetch(`${API}/clients`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone })
+    });
 
-    try {
-        const res = await fetch(`${API}/clients`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, phone })
-        });
+    if (!res.ok) return alert("No se pudo guardar el cliente");
 
-        if (!res.ok) {
-            const txt = await res.text().catch(() => "");
-            console.error("POST /clients falló:", res.status, txt);
-            return alert(`No se pudo guardar el cliente (HTTP ${res.status})`);
-        }
+    nameEl.value = "";
+    phoneEl.value = "";
 
-        // Limpiar inputs
-        nameEl.value = "";
-        phoneEl.value = "";
-
-
-    } catch (err) {
-        console.error("Error de red al crear cliente:", err);
-        alert("Error de red: ¿está corriendo el backend?");
-    }
+    await loadClients();
+    await loadClientsForAppointments();
 }
 
+async function deleteClient(id) {
+    const ok = confirm("¿Eliminar este cliente?");
+    if (!ok) return;
 
+    const res = await fetch(`${API}/clients/${id}`, { method: "DELETE" });
+    if (!res.ok) return alert("No se pudo eliminar");
 
+    await loadClients();
+    await loadClientsForAppointments();
+}
 
 // ================= TURNOS =================
+
+async function loadClientsForAppointments() {
+    const res = await fetch(`${API}/clients`);
+    const clients = await res.json();
+
+    const clientSelect = document.getElementById("appointmentClient");
+    if (!clientSelect) return;
+
+    clientSelect.innerHTML = "";
+    clients.forEach(c => {
+        const option = document.createElement("option");
+        option.value = c.id;
+        option.textContent = c.name;
+        clientSelect.appendChild(option);
+    });
+}
 
 async function loadAppointments() {
     const res = await fetch(`${API}/appointments`);
     const data = await res.json();
 
     const ul = document.getElementById("appointments");
+    if (!ul) return;
     ul.innerHTML = "";
 
     data.forEach(a => {
@@ -167,24 +164,6 @@ async function loadAppointments() {
     });
 }
 
-async function loadClientsAndServicesForAppointments() {
-    const clientsRes = await fetch(`${API}/clients`);
-    const clients = await clientsRes.json();
-
-    const clientSelect = document.getElementById("appointmentClient");
-    if (!clientSelect) return;
-
-    clientSelect.innerHTML = "";
-
-    clients.forEach(c => {
-        const option = document.createElement("option");
-        option.value = c.id;
-        option.textContent = c.name;
-        clientSelect.appendChild(option);
-    });
-}
-
-
 async function addAppointment() {
     const client_id = document.getElementById("appointmentClient").value;
     const service_id = document.getElementById("appointmentServiceId").value;
@@ -192,7 +171,7 @@ async function addAppointment() {
     const time = document.getElementById("appointmentTime").value;
 
     if (!client_id) return alert("Elegí un cliente");
-    if (!service_id) return alert("Elegí un servicio");
+    if (!service_id) return alert("Elegí un servicio de 'Servicios disponibles'");
     if (!date || !time) return alert("Fecha y hora requeridas");
 
     const res = await fetch(`${API}/appointments`, {
@@ -203,7 +182,6 @@ async function addAppointment() {
 
     if (!res.ok) return alert("No se pudo guardar el turno");
 
-    // limpiar selección de servicio
     document.getElementById("appointmentServiceId").value = "";
     const box = document.getElementById("servicesCatalog");
     if (box) box.querySelectorAll(".service-card").forEach(x => x.classList.remove("active"));
@@ -211,29 +189,20 @@ async function addAppointment() {
     await loadAppointments();
 }
 
-
-
+// ================= CATALOGO (SERVICIOS DISPONIBLES) =================
 
 let servicesCache = [];
 
-async function loadServicesForCatalogAndSelect() {
+async function loadServicesCatalog() {
+    const res = await fetch(`${API}/services/catalog`); 
     servicesCache = await res.json();
     renderServicesCatalog();
 }
 
-
 function renderServicesCatalog() {
     const box = document.getElementById("servicesCatalog");
     const hidden = document.getElementById("appointmentServiceId");
-
-    if (!box) {
-        console.error("No existe #servicesCatalog en el HTML");
-        return;
-    }
-    if (!hidden) {
-        console.error("No existe #appointmentServiceId (hidden) en el HTML");
-        return;
-    }
+    if (!box || !hidden) return;
 
     box.innerHTML = "";
 
@@ -256,31 +225,18 @@ function renderServicesCatalog() {
 }
 
 
-
-serviceSelect.onchange = () => renderServicesCatalog();
-
-
-
 document.addEventListener("DOMContentLoaded", async () => {
-
-
-    // Precio (Servicios)
+    // Solo números
     const priceInput = document.getElementById("servicePrice");
-    if (priceInput) {
-        priceInput.addEventListener("input", (e) => onlyNumbers(e.target));
-    }
+    if (priceInput) priceInput.addEventListener("input", (e) => onlyNumbers(e.target));
 
-    // Teléfono (Clientes)
     const phoneInput = document.getElementById("clientPhone");
-    if (phoneInput) {
-        phoneInput.addEventListener("input", (e) => onlyNumbers(e.target));
-    }
+    if (phoneInput) phoneInput.addEventListener("input", (e) => onlyNumbers(e.target));
 
-    console.log("DOM cargado");
+    // Cargas iniciales
     await loadServices();
     await loadClients();
+    await loadClientsForAppointments();
+    await loadServicesCatalog();
     await loadAppointments();
-    await loadClientsAndServicesForAppointments();
-    await loadServicesForCatalogAndSelect();
 });
-
