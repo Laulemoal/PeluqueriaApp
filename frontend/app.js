@@ -1,9 +1,13 @@
+function onlyNumbers(input) {
+    input.value = input.value.replace(/\D/g, "");
+}
+
 const API = "http://localhost:3000";
 
 async function loadServices() {
     const res = await fetch(`${API}/services`);
     const data = await res.json();
-
+    const servicesRes = await fetch(`${API}/services/catalog`);
     const ul = document.getElementById("services");
     ul.innerHTML = "";
 
@@ -24,18 +28,30 @@ async function loadServices() {
     });
 }
 
-async function addService() {
-    const name = document.getElementById("serviceName").value;
-    const price = document.getElementById("servicePrice").value;
+// ================= SERVICIOS =================
 
-    await fetch(`${API}/services`, {
+async function addService() {
+    const nameEl = document.getElementById("serviceName");
+    const priceEl = document.getElementById("servicePrice");
+    const name = nameEl.value.trim();
+    const price = priceEl.value.trim();
+
+    if (!name) return alert("Nombre del servicio requerido");
+    if (!price || Number(price) < 0) return alert("Precio válido requerido");
+
+    const res = await fetch(`${API}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, price })
+        body: JSON.stringify({ name, price: Number(price) })
     });
 
-    loadServices();
+    if (!res.ok) return alert("No se pudo guardar el servicio");
+
+    nameEl.value = "";
+    priceEl.value = "";
+
 }
+
 
 async function deleteService(id) {
     const ok = confirm("¿Eliminar este servicio?");
@@ -45,11 +61,11 @@ async function deleteService(id) {
         method: "DELETE"
     });
 
-    loadServices();
+
 }
 
 
-loadServices();
+
 
 // ================= CLIENTES =================
 
@@ -92,8 +108,6 @@ async function deleteClient(id) {
         return alert(`No se pudo eliminar (HTTP ${res.status})`);
     }
 
-    await loadClients();
-    await loadClientsAndServicesForAppointments();
 }
 
 
@@ -105,6 +119,10 @@ async function addClient() {
     const phone = phoneEl.value.trim();
 
     if (!name) return alert("Nombre requerido");
+
+    if (phone && !/^\d+$/.test(phone)) {
+        return alert("El teléfono solo puede contener números");
+    }
 
     try {
         const res = await fetch(`${API}/clients`, {
@@ -123,9 +141,6 @@ async function addClient() {
         nameEl.value = "";
         phoneEl.value = "";
 
-        // Refrescar UI (clientes + selects de turnos)
-        await loadClients();
-        await loadClientsAndServicesForAppointments();
 
     } catch (err) {
         console.error("Error de red al crear cliente:", err);
@@ -134,7 +149,7 @@ async function addClient() {
 }
 
 
-loadClients();
+
 
 // ================= TURNOS =================
 
@@ -154,16 +169,12 @@ async function loadAppointments() {
 
 async function loadClientsAndServicesForAppointments() {
     const clientsRes = await fetch(`${API}/clients`);
-    const servicesRes = await fetch(`${API}/services`);
-
     const clients = await clientsRes.json();
-    const services = await servicesRes.json();
 
     const clientSelect = document.getElementById("appointmentClient");
-    const serviceSelect = document.getElementById("appointmentService");
+    if (!clientSelect) return;
 
     clientSelect.innerHTML = "";
-    serviceSelect.innerHTML = "";
 
     clients.forEach(c => {
         const option = document.createElement("option");
@@ -171,31 +182,105 @@ async function loadClientsAndServicesForAppointments() {
         option.textContent = c.name;
         clientSelect.appendChild(option);
     });
-
-    services.forEach(s => {
-        const option = document.createElement("option");
-        option.value = s.id;
-        option.textContent = s.name;
-        serviceSelect.appendChild(option);
-    });
 }
+
 
 async function addAppointment() {
     const client_id = document.getElementById("appointmentClient").value;
-    const service_id = document.getElementById("appointmentService").value;
+    const service_id = document.getElementById("appointmentServiceId").value;
     const date = document.getElementById("appointmentDate").value;
     const time = document.getElementById("appointmentTime").value;
 
+    if (!client_id) return alert("Elegí un cliente");
+    if (!service_id) return alert("Elegí un servicio");
     if (!date || !time) return alert("Fecha y hora requeridas");
 
-    await fetch(`${API}/appointments`, {
+    const res = await fetch(`${API}/appointments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client_id, service_id, date, time })
+        body: JSON.stringify({ client_id, service_id: Number(service_id), date, time })
     });
 
-    loadAppointments();
+    if (!res.ok) return alert("No se pudo guardar el turno");
+
+    // limpiar selección de servicio
+    document.getElementById("appointmentServiceId").value = "";
+    const box = document.getElementById("servicesCatalog");
+    if (box) box.querySelectorAll(".service-card").forEach(x => x.classList.remove("active"));
+
+    await loadAppointments();
 }
 
-loadAppointments();
-loadClientsAndServicesForAppointments();
+
+
+
+let servicesCache = [];
+
+async function loadServicesForCatalogAndSelect() {
+    servicesCache = await res.json();
+    renderServicesCatalog();
+}
+
+
+function renderServicesCatalog() {
+    const box = document.getElementById("servicesCatalog");
+    const hidden = document.getElementById("appointmentServiceId");
+
+    if (!box) {
+        console.error("No existe #servicesCatalog en el HTML");
+        return;
+    }
+    if (!hidden) {
+        console.error("No existe #appointmentServiceId (hidden) en el HTML");
+        return;
+    }
+
+    box.innerHTML = "";
+
+    servicesCache.forEach(s => {
+        const card = document.createElement("div");
+        card.className = "service-card";
+        card.innerHTML = `
+      <div class="name">${s.name}</div>
+      <div class="price">$${s.price}</div>
+    `;
+
+        card.onclick = () => {
+            hidden.value = String(s.id);
+            box.querySelectorAll(".service-card").forEach(x => x.classList.remove("active"));
+            card.classList.add("active");
+        };
+
+        box.appendChild(card);
+    });
+}
+
+
+
+serviceSelect.onchange = () => renderServicesCatalog();
+
+
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+
+    // Precio (Servicios)
+    const priceInput = document.getElementById("servicePrice");
+    if (priceInput) {
+        priceInput.addEventListener("input", (e) => onlyNumbers(e.target));
+    }
+
+    // Teléfono (Clientes)
+    const phoneInput = document.getElementById("clientPhone");
+    if (phoneInput) {
+        phoneInput.addEventListener("input", (e) => onlyNumbers(e.target));
+    }
+
+    console.log("DOM cargado");
+    await loadServices();
+    await loadClients();
+    await loadAppointments();
+    await loadClientsAndServicesForAppointments();
+    await loadServicesForCatalogAndSelect();
+});
+

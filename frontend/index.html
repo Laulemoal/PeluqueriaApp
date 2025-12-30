@@ -18,7 +18,7 @@
         <section>
             <h2>Servicios</h2>
             <input id="serviceName" placeholder="Servicio (Corte, Balayage)">
-            <input id="servicePrice" type="number" placeholder="Precio">
+            <input id="servicePrice" type="number" inputmode="numeric" min="0" step="1" placeholder="Precio" />
             <button onclick="addService()">Agregar</button>
             <ul id="services"></ul>
         </section>
@@ -26,24 +26,31 @@
         <section>
             <h2>Clientes</h2>
             <input id="clientName" placeholder="Nombre del cliente">
-            <input id="clientPhone" placeholder="Teléfono">
+            <input id="clientPhone" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Teléfono" />
             <button onclick="addClient()">Agregar cliente</button>
             <ul id="clients"></ul>
         </section>
 
         <section>
             <h2>Turnos</h2>
+
             <select id="appointmentClient"></select>
-            <select id="appointmentService"></select>
+            <input id="appointmentServiceId" type="hidden">
+
+            <div class="service-catalog">
+                <h3>Servicios disponibles</h3>
+                <div id="servicesCatalog"></div>
+            </div>
+
+
             <input type="date" id="appointmentDate">
             <input type="time" id="appointmentTime">
-            <button onclick="addAppointment()">Agregar turno</button>
+            <button type="button" onclick="addAppointment()">Agregar turno</button>
+
             <ul id="appointments"></ul>
         </section>
 
-    </div>
-
-    <script src="app.js"></script>
+        <script src="app.js"></script>
 </body>
 
 

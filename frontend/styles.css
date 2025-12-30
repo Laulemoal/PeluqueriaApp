@@ -132,3 +132,42 @@ button.danger {
 button.danger:hover {
     opacity: 0.9;
 }
+
+.service-catalog h3 {
+    margin: 10px 0;
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+#servicesCatalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.service-card {
+    background: #2a2a2a;
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    border: 1px solid #333;
+}
+
+.service-card:hover {
+    opacity: 0.9;
+}
+
+.service-card .name {
+    font-weight: bold;
+}
+
+.service-card .price {
+    opacity: 0.85;
+    margin-top: 6px;
+    font-size: 14px;
+}
+
+.service-card.active {
+    outline: 2px solid #e91e63;
+}
