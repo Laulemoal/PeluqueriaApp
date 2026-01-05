@@ -67,7 +67,6 @@ async function deleteService(id) {
     await loadServicesCatalog();
 }
 
-// ================= CLIENTES =================
 
 async function loadClients() {
     const res = await fetch(`${API}/clients`);
@@ -131,7 +130,6 @@ async function deleteClient(id) {
     await loadClientsForAppointments();
 }
 
-// ================= TURNOS =================
 
 async function loadClientsForAppointments() {
     const res = await fetch(`${API}/clients`);
@@ -189,7 +187,6 @@ async function addAppointment() {
     await loadAppointments();
 }
 
-// ================= CATALOGO (SERVICIOS DISPONIBLES) =================
 
 let servicesCache = [];
 
